@@ -1,0 +1,283 @@
+use rand::Rng;
+
+#[derive(Debug, Hash, PartialEq, Eq, Copy, Clone)]
+pub enum Suit {
+    Hearts,
+    Diamonds,
+    Clubs,
+    Spades,
+}
+impl Suit {
+    fn suits() -> Vec<Suit> {
+        vec![Suit::Hearts, Suit::Diamonds, Suit::Clubs, Suit::Spades]
+    }
+}
+impl From<Suit> for String {
+    fn from(suit: Suit) -> Self {
+        match suit {
+            Suit::Hearts => '♥'.to_string(),
+            Suit::Diamonds => '♦'.to_string(),
+            Suit::Clubs => '♣'.to_string(),
+            Suit::Spades => '♠'.to_string(),
+        }
+    }
+}
+impl From<String> for Suit {
+    fn from(string: String) -> Suit {
+        match string.as_str() {
+            "♥" => Suit::Hearts,
+            "♦" => Suit::Diamonds,
+            "♣" => Suit::Clubs,
+            "♠" => Suit::Spades,
+            _ => panic!("Invalid value for suit: '{}'", string),
+        }
+    }
+}
+
+#[derive(Debug, Hash, PartialEq, Eq, Copy, Clone)]
+pub enum Rank {
+    Two,
+    Three,
+    Four,
+    Five,
+    Six,
+    Seven,
+    Eight,
+    Nine,
+    Ten,
+    Jack,
+    Queen,
+    King,
+    Ace,
+}
+impl Rank {
+    fn ranks() -> Vec<Rank> {
+        vec![
+            Rank::Two,
+            Rank::Three,
+            Rank::Four,
+            Rank::Five,
+            Rank::Six,
+            Rank::Seven,
+            Rank::Eight,
+            Rank::Nine,
+            Rank::Ten,
+            Rank::Jack,
+            Rank::Queen,
+            Rank::King,
+            Rank::Ace,
+        ]
+    }
+}
+impl From<Rank> for String {
+    fn from(rank: Rank) -> String {
+        match rank {
+            Rank::Two => "2".to_string(),
+            Rank::Three => "3".to_string(),
+            Rank::Four => "4".to_string(),
+            Rank::Five => "5".to_string(),
+            Rank::Six => "6".to_string(),
+            Rank::Seven => "7".to_string(),
+            Rank::Eight => "8".to_string(),
+            Rank::Nine => "9".to_string(),
+            Rank::Ten => "10".to_string(),
+            Rank::Jack => "J".to_string(),
+            Rank::Queen => "Q".to_string(),
+            Rank::King => "K".to_string(),
+            Rank::Ace => "A".to_string(),
+        }
+    }
+}
+impl From<String> for Rank {
+    fn from(string: String) -> Rank {
+        match string.as_str() {
+            "2" => Rank::Two,
+            "3" => Rank::Three,
+            "4" => Rank::Four,
+            "5" => Rank::Five,
+            "6" => Rank::Six,
+            "7" => Rank::Seven,
+            "8" => Rank::Eight,
+            "9" => Rank::Nine,
+            "10" => Rank::Ten,
+            "J" => Rank::Jack,
+            "Q" => Rank::Queen,
+            "K" => Rank::King,
+            "A" => Rank::Ace,
+            _ => panic!("Invalid value for rank: '{}'", string),
+        }
+    }
+}
+
+#[derive(Debug, Hash, PartialEq, Eq, Copy, Clone)]
+pub struct Card(Rank, Suit);
+impl Card {
+    pub fn get_display_lines(&self) -> [String;8] {
+        let first_line = format!("_______");
+        let (second_line, third_line,fourth_line, fifth_line, sixth_line, seventh_line, eighth_line) = match self.0 {
+            Rank::Ace => (
+                format!("|{}    |",String::from(self.0)),
+                format!("|     |"),
+                format!("|     |"),
+                format!("|  {}  |",String::from(self.1)),
+                format!("|     |"),
+                format!("|     |"),
+                format!("|____{}|",String::from(self.0))
+            ),
+            Rank::Two => (
+                format!("|{}    |",String::from(self.0)),
+                format!("|  {}  |",String::from(self.1)),
+                format!("|     |"),
+                format!("|     |"),
+                format!("|     |"),
+                format!("|  {}  |",String::from(self.1)),
+                format!("|____{}|",String::from(self.0))
+            ),
+            Rank::Three => (
+                format!("|{}    |",String::from(self.0)),
+                format!("|  {}  |",String::from(self.1)),
+                format!("|     |"),
+                format!("|  {}  |",String::from(self.1)),
+                format!("|     |"),
+                format!("|  {}  |",String::from(self.1)),
+                format!("|____{}|",String::from(self.0))
+            ),
+            Rank::Four => (
+                format!("|{}    |",String::from(self.0)),
+                format!("| {} {} |",String::from(self.1), String::from(self.1)),
+                format!("|     |"),
+                format!("|     |"),
+                format!("|     |"),
+                format!("| {} {} |",String::from(self.1), String::from(self.1)),
+                format!("|____{}|",String::from(self.0))
+            ),
+            Rank::Five => (
+                format!("|{}    |",String::from(self.0)),
+                format!("| {} {} |",String::from(self.1), String::from(self.1)),
+                format!("|     |"),
+                format!("|  {}  |",String::from(self.1)),
+                format!("|     |"),
+                format!("| {} {} |",String::from(self.1), String::from(self.1)),
+                format!("|____{}|",String::from(self.0))
+            ),
+            Rank::Six => (
+                format!("|{}    |",String::from(self.0)),
+                format!("| {} {} |",String::from(self.1), String::from(self.1)),
+                format!("|     |"),
+                format!("| {} {} |",String::from(self.1), String::from(self.1)),
+                format!("|     |"),
+                format!("| {} {} |",String::from(self.1), String::from(self.1)),
+                format!("|____{}|",String::from(self.0))
+            ),
+            Rank::Seven => (
+                format!("|{}    |",String::from(self.0)),
+                format!("| {} {} |",String::from(self.1), String::from(self.1)),
+                format!("|  {}  |",String::from(self.1)),
+                format!("| {} {} |",String::from(self.1), String::from(self.1)),
+                format!("|     |"),
+                format!("| {} {} |",String::from(self.1), String::from(self.1)),
+                format!("|____{}|",String::from(self.0))
+            ),
+            Rank::Eight => (
+                format!("|{}    |",String::from(self.0)),
+                format!("| {} {} |",String::from(self.1), String::from(self.1)),
+                format!("|  {}  |",String::from(self.1)),
+                format!("| {} {} |",String::from(self.1), String::from(self.1)),
+                format!("|  {}  |",String::from(self.1)),
+                format!("| {} {} |",String::from(self.1), String::from(self.1)),
+                format!("|____{}|",String::from(self.0))
+            ),
+            Rank::Nine => (
+                format!("|{}    |",String::from(self.0)),
+                format!("| {} {} |",String::from(self.1), String::from(self.1)),
+                format!("|  {}  |",String::from(self.1)),
+                format!("| {}{}{} |",String::from(self.1), String::from(self.1),String::from(self.1)),
+                format!("|  {}  |",String::from(self.1)),
+                format!("| {} {} |",String::from(self.1), String::from(self.1)),
+                format!("|____{}|",String::from(self.0))
+            ),
+            Rank::Ten => (
+                format!("|{}   |",String::from(self.0)),
+                format!("| {} {} |",String::from(self.1), String::from(self.1)),
+                format!("| {} {} |",String::from(self.1), String::from(self.1)),
+                format!("| {} {} |",String::from(self.1), String::from(self.1)),
+                format!("| {} {} |",String::from(self.1), String::from(self.1)),
+                format!("| {} {} |",String::from(self.1), String::from(self.1)),
+                format!("|___{}|",String::from(self.0))
+            ),
+            Rank::Jack => (
+                format!("|{}    |",String::from(self.0)),
+                format!("|     |"),
+                format!("|     |"),
+                format!("|  {}  |",String::from(self.1)),
+                format!("|     |"),
+                format!("|     |"),
+                format!("|____{}|",String::from(self.0))
+            ),
+            Rank::Queen => (
+                format!("|{}    |",String::from(self.0)),
+                format!("|     |"),
+                format!("|     |"),
+                format!("|  {}  |",String::from(self.1)),
+                format!("|     |"),
+                format!("|     |"),
+                format!("|____{}|",String::from(self.0))
+            ),
+            Rank::King => (
+                format!("|{}    |",String::from(self.0)),
+                format!("|     |"),
+                format!("|     |"),
+                format!("|  {}  |",String::from(self.1)),
+                format!("|     |"),
+                format!("|     |"),
+                format!("|____{}|",String::from(self.0))
+            )
+        };
+        [
+            first_line, 
+            second_line, 
+            third_line, 
+            fourth_line, 
+            fifth_line, 
+            sixth_line,
+            seventh_line,
+            eighth_line
+        ]
+    }
+}
+
+#[derive(Debug)]
+pub struct Deck {
+    pub deck: Vec<Card>,
+}
+impl Deck {
+    pub fn new() -> Deck {
+        let mut deck = Vec::new();
+        for suit in Suit::suits() {
+            for rank in Rank::ranks() {
+                deck.push(Card(rank, suit));
+            }
+        }
+        Deck { deck }
+    }
+
+    pub fn deal(&mut self) -> Option<Card> {
+        if self.deck.len() == 0 {
+            return None;
+        }
+        let index = rand::thread_rng().gen_range(0..self.deck.len());
+        let card = self.deck.swap_remove(index);
+        Some(card)
+    }
+
+    pub fn print_cards(cards: &[Card]) {
+        let mut lines = vec![String::new(); 8];
+        for card in cards {
+            let card_lines = card.get_display_lines();
+            for line_number in 0..8 {
+                lines[line_number].push_str(&format!("{} ", card_lines[line_number]));
+            }
+        }
+        println!("{}",lines.join("\n"));
+    }
+}
