@@ -1,22 +1,25 @@
-name: Rust Testing
-run-name: ${{ github.actor }} is testing Rust code
-on: [push, pull_request]
+name: Test-Rust-Code
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
 jobs:
-  Test-Rust-Code:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out repository code
-        uses: actions/checkout@v4
+    - name: Check out repository code
+      uses: actions/checkout@v3
 
-      - name: Set up Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-      - name: Navigate to directory
-        run: cd poker
+    - name: Set up Rust
+      uses: actions/setup-rust@v1
+      with:
+        rust-version: stable
 
-      - name: Install dependencies
-        run: cargo fetch
+    - name: Install dependencies
+      run: cargo fetch
 
-      - name: Run tests
-        run: cargo test --verbose
+    - name: Run tests
+      run: cargo test
