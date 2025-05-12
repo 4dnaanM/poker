@@ -12,6 +12,8 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
+      - name: Navigate to directory
+        run: cd poker
 
       - name: Install dependencies
         run: cargo fetch
