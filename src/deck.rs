@@ -1,4 +1,5 @@
 use rand::Rng;
+use std::cmp::Ordering;
 
 #[derive(Debug, Hash, PartialEq, Eq, Copy, Clone)]
 pub enum Suit {
@@ -108,9 +109,33 @@ impl From<String> for Rank {
         }
     }
 }
+impl PartialOrd for Rank {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+impl Ord for Rank {
+    fn cmp(&self, other: &Self) -> Ordering {
+        let self_index = Rank::ranks().iter().position(|&r| r == *self).unwrap();
+        let other_index = Rank::ranks().iter().position(|&r| r == *other).unwrap();
+        self_index.cmp(&other_index)
+    }
+}
+
+impl std::ops::Add<u8> for Rank {
+    type Output = Option<Rank>;
+
+    fn add(self, rhs: u8) -> Option<Rank> {
+        let ranks = Rank::ranks();
+        let current_index = ranks.iter().position(|&r| r == self).unwrap();
+        if current_index + rhs as usize >= 13  {return None}
+        ranks.get(current_index + rhs as usize).copied()
+    }
+}
+
 
 #[derive(Debug, Hash, PartialEq, Eq, Copy, Clone)]
-pub struct Card(Rank, Suit);
+pub struct Card(pub Rank, pub Suit);
 impl Card {
     pub fn get_display_lines(&self) -> [String;8] {
         let first_line = format!("_________");
@@ -155,7 +180,7 @@ impl Card {
                 format!("|{}      |",String::from(self.0)),
                 format!("| {}   {} |",String::from(self.1), String::from(self.1)),
                 format!("|       |"),
-                format!("|  {}    |",String::from(self.1)),
+                format!("|   {}   |",String::from(self.1)),
                 format!("|       |"),
                 format!("| {}   {} |",String::from(self.1), String::from(self.1)),
                 format!("|______{}|",String::from(self.0))
@@ -207,32 +232,40 @@ impl Card {
             ),
             Rank::Jack => (
                 format!("|{}      |",String::from(self.0)),
-                format!("|       |"),
-                format!("|       |"),
-                format!("|   {}   |",String::from(self.1)),
-                format!("|       |"),
-                format!("|       |"),
+                format!("| {}{}{}{}{} |",String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1)),
+                format!("| {}{}{}{}{} |",String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1)),
+                format!("| {}{}{}{}{} |",String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1)),
+                format!("| {}{}{}{}{} |",String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1)),
+                format!("| {}{}{}{}{} |",String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1)),
                 format!("|______{}|",String::from(self.0))
             ),
             Rank::Queen => (
                 format!("|{}      |",String::from(self.0)),
-                format!("|       |"),
-                format!("|       |"),
-                format!("|   {}   |",String::from(self.1)),
-                format!("|       |"),
-                format!("|       |"),
+                format!("| {}{}{}{}{} |",String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1)),
+                format!("| {}{}{}{}{} |",String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1)),
+                format!("| {}{}{}{}{} |",String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1)),
+                format!("| {}{}{}{}{} |",String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1)),
+                format!("| {}{}{}{}{} |",String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1)),
                 format!("|______{}|",String::from(self.0))
             ),
             Rank::King => (
+                // format!("|{}      |",String::from(self.0)),
+                // format!("|       |"),
+                // format!("|       |"),
+                // format!("|   {}   |",String::from(self.1)),
+                // format!("|       |"),
+                // format!("|       |"),
+                // format!("|______{}|",String::from(self.0))
                 format!("|{}      |",String::from(self.0)),
-                format!("|       |"),
-                format!("|       |"),
-                format!("|   {}   |",String::from(self.1)),
-                format!("|       |"),
-                format!("|       |"),
+                format!("| {}{}{}{}{} |",String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1)),
+                format!("| {}{}{}{}{} |",String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1)),
+                format!("| {}{}{}{}{} |",String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1)),
+                format!("| {}{}{}{}{} |",String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1)),
+                format!("| {}{}{}{}{} |",String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1)),
                 format!("|______{}|",String::from(self.0))
             )
         };
+
         [
             first_line, 
             second_line, 
@@ -270,15 +303,24 @@ impl Deck {
         Some(card)
     }
 
-    pub fn print_cards(cards: &[Card]) {
+    pub fn print_cards<T: AsRef<[Card]>>(cards: T) {
         let mut lines = vec![String::new(); 8];
-        for card in cards {
+        let mut count_cards = 0; 
+        for card in cards.as_ref() {
             let card_lines = card.get_display_lines();
             for line_number in 0..8 {
                 lines[line_number].push_str(&format!("{} ", card_lines[line_number]));
             }
+            count_cards += 1; 
+            if count_cards==13 {
+                count_cards=0; 
+                println!("{}", lines.join("\n"));    
+                lines = vec![String::new(); 8];
+            }
         }
-        println!("{}",lines.join("\n"));
+        if count_cards>0 {
+            println!("{}", lines.join("\n"));    
+        }
     }
 }
 #[cfg(test)]
