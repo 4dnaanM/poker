@@ -8,11 +8,6 @@ pub enum Suit {
     Clubs,
     Spades,
 }
-impl Suit {
-    fn suits() -> Vec<Suit> {
-        vec![Suit::Hearts, Suit::Diamonds, Suit::Clubs, Suit::Spades]
-    }
-}
 impl From<Suit> for String {
     fn from(suit: Suit) -> Self {
         match suit {
@@ -51,25 +46,21 @@ pub enum Rank {
     King,
     Ace,
 }
-impl Rank {
-    fn ranks() -> Vec<Rank> {
-        vec![
-            Rank::Two,
-            Rank::Three,
-            Rank::Four,
-            Rank::Five,
-            Rank::Six,
-            Rank::Seven,
-            Rank::Eight,
-            Rank::Nine,
-            Rank::Ten,
-            Rank::Jack,
-            Rank::Queen,
-            Rank::King,
-            Rank::Ace,
-        ]
-    }
-}
+static RANK_ORDER: &[Rank] = &[
+    Rank::Two,
+    Rank::Three,
+    Rank::Four,
+    Rank::Five,
+    Rank::Six,
+    Rank::Seven,
+    Rank::Eight,
+    Rank::Nine,
+    Rank::Ten,
+    Rank::Jack,
+    Rank::Queen,
+    Rank::King,
+    Rank::Ace,
+];
 impl From<Rank> for String {
     fn from(rank: Rank) -> String {
         match rank {
@@ -116,8 +107,8 @@ impl PartialOrd for Rank {
 }
 impl Ord for Rank {
     fn cmp(&self, other: &Self) -> Ordering {
-        let self_index = Rank::ranks().iter().position(|&r| r == *self).unwrap();
-        let other_index = Rank::ranks().iter().position(|&r| r == *other).unwrap();
+        let self_index = RANK_ORDER.iter().position(|&r| r == *self).unwrap();
+        let other_index = RANK_ORDER.iter().position(|&r| r == *other).unwrap();
         self_index.cmp(&other_index)
     }
 }
@@ -126,13 +117,11 @@ impl std::ops::Add<u8> for Rank {
     type Output = Option<Rank>;
 
     fn add(self, rhs: u8) -> Option<Rank> {
-        let ranks = Rank::ranks();
-        let current_index = ranks.iter().position(|&r| r == self).unwrap();
+        let current_index = RANK_ORDER.iter().position(|&r| r == self).unwrap();
         if current_index + rhs as usize >= 13  {return None}
-        ranks.get(current_index + rhs as usize).copied()
+        Some(*RANK_ORDER.get(current_index + rhs as usize).unwrap())
     }
 }
-
 
 #[derive(Debug, Hash, PartialEq, Eq, Copy, Clone)]
 pub struct Card(pub Rank, pub Suit);
@@ -286,9 +275,9 @@ pub struct Deck {
 impl Deck {
     pub fn new() -> Deck {
         let mut deck = Vec::new();
-        for suit in Suit::suits() {
-            for rank in Rank::ranks() {
-                deck.push(Card(rank, suit));
+        for suit in vec![Suit::Hearts, Suit::Diamonds, Suit::Clubs, Suit::Spades] {
+            for rank in RANK_ORDER {
+                deck.push(Card(*rank, suit));
             }
         }
         Deck { deck }

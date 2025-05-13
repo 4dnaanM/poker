@@ -13,26 +13,22 @@ pub enum Hand {
     Pair, 
     HighCard
 }
-impl Hand {
-    fn hands(&self) -> Vec<Hand> {
-        vec![
-            Hand::RoyalFlush, 
-            Hand::StraightFlush, 
-            Hand::Quads, 
-            Hand::FullHouse, 
-            Hand::Flush,
-            Hand::Straight, 
-            Hand::Trips, 
-            Hand::TwoPair, 
-            Hand::Pair, 
-            Hand::HighCard
-        ]
-    }
-}
+static HAND_ORDER: &[Hand] = &[
+    Hand::RoyalFlush, 
+    Hand::StraightFlush, 
+    Hand::Quads, 
+    Hand::FullHouse, 
+    Hand::Flush,
+    Hand::Straight, 
+    Hand::Trips, 
+    Hand::TwoPair, 
+    Hand::Pair, 
+    Hand::HighCard
+];
 impl Ord for Hand {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.hands().iter().position(|&r| r == *other).unwrap()
-            .cmp(&self.hands().iter().position(|&r| r == *self).unwrap())
+        HAND_ORDER.iter().position(|&r| r == *other).unwrap()
+            .cmp(&HAND_ORDER.iter().position(|&r| r == *self).unwrap())
     }
 }
 impl PartialOrd for Hand {
