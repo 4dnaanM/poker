@@ -118,8 +118,8 @@ impl Add<u8> for Rank {
 
     fn add(self, rhs: u8) -> Option<Rank> {
         let current_index = RANK_ORDER.iter().position(|&r| r == self).unwrap();
-        if current_index + rhs as usize >= 13  {return None}
-        Some(*RANK_ORDER.get(current_index + rhs as usize).unwrap())
+        let new_index = (current_index + rhs as usize) % RANK_ORDER.len();
+        Some(*RANK_ORDER.get(new_index).unwrap())
     }
 }
 

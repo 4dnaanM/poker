@@ -104,11 +104,12 @@ impl Game {
         debug_assert!(rank_sorted_hand.windows(2).all(|w| w[0].0 >= w[1].0), "Hand must be sorted in decreasing order by rank");
         
         // ignoring straight flushes - those are accounted for in best_flush
+        let n = rank_sorted_hand.len(); 
         let mut hand = Vec::new(); 
         hand.push(rank_sorted_hand[0]);
-        for idx in 1..rank_sorted_hand.len() {
-            let card = rank_sorted_hand[idx];
-            let prev = rank_sorted_hand[idx-1];
+        for idx in 1..n+1 {
+            let card = rank_sorted_hand[idx%n];
+            let prev = rank_sorted_hand[(idx-1)%n];
             if card.0 + 1 != Some(prev.0) {
                 hand.clear(); 
             }
@@ -120,7 +121,6 @@ impl Game {
     
     fn best_flush(rank_sorted_hand: &Vec<Card>) -> Option<([Card;5],Hand)> {
         // sorted in decreasing order
-        Deck::print_cards(rank_sorted_hand);
         debug_assert!(rank_sorted_hand.windows(2).all(|w| w[0].0 >= w[1].0), "Hand must be sorted in decreasing order by rank");
 
         let mut suits: Vec<Vec<Card>> = vec![Vec::new(), Vec::new(), Vec::new(), Vec::new()];
@@ -246,11 +246,11 @@ impl Game {
         
         let n_players = self.players.len();
         if n_players<=1  {return;} 
+
         for i in 0..2*n_players {
             let idx = (dealer + 1 + i) % n_players;
             self.players[idx].deal_card(deck.deal().unwrap());
         }
-
 
         for player in &self.players{
             println!("{}'s hand:",player.name);
@@ -274,6 +274,8 @@ impl Game {
         let mut pot = 0; 
         
         'street: loop {
+            deck.burn_card();
+            
             let revealed_upto = revealed_card_numbers[street];
 
             if revealed_upto!=0 {
@@ -487,6 +489,37 @@ mod tests {
         hand.sort_by_key(|card| std::cmp::Reverse(card.0));
         let straight = Game::best_straight(&hand);
         assert!(straight == Some(([Card(Jack,Hearts),Card(Ten,Spades),Card(Nine,Spades),Card(Eight,Spades),Card(Seven,Hearts)],Straight)))
+    }
+
+    #[test]
+    fn test_ace_straights() {
+        let mut hand = vec!(
+            Card(Ace,Spades),
+            Card(Nine,Spades),
+            Card(Three,Diamonds),
+            Card(Two,Spades),
+            Card(Five,Hearts),
+            Card(Four,Spades),
+            Card(Jack,Hearts)
+        );
+
+        hand.sort_by_key(|card| std::cmp::Reverse(card.0));
+        let straight = Game::best_straight(&hand);
+        assert!(straight == Some(([Card(Five,Hearts),Card(Four,Spades),Card(Three,Diamonds),Card(Two,Spades),Card(Ace,Spades)],Straight)));
+
+        hand = vec!(
+            Card(Ace,Spades),
+            Card(Ten,Spades),
+            Card(Queen,Diamonds),
+            Card(King,Spades),
+            Card(Five,Hearts),
+            Card(Four,Spades),
+            Card(Jack,Hearts)
+        );
+
+        hand.sort_by_key(|card| std::cmp::Reverse(card.0));
+        let straight = Game::best_straight(&hand);
+        assert!(straight == Some(([Card(Ace,Spades),Card(King,Spades),Card(Queen,Diamonds),Card(Jack,Hearts),Card(Ten,Spades)],Straight)));
     }
 
     #[test]
