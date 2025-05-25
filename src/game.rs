@@ -1,5 +1,5 @@
 use crate::deck::{Deck, Card, Suit::*, Rank::*};
-use crate::player::{Player,Action,PlayerState};
+use crate::player::{Action, Player, PlayerState};
 #[derive(Eq, PartialEq, Debug, Clone, Copy)]
 pub enum Hand {
     RoyalFlush, 
@@ -53,7 +53,7 @@ impl Game {
 
         let mut players = Vec::new();
         for i in 0..n_players { 
-            let player = Player::new(format!("Player {}", i + 1), buyin);
+            let player = Player::new(i as usize,format!("Player {}", i + 1), buyin);
             players.push(player);
         }
 
@@ -177,9 +177,9 @@ impl Game {
         return best_hand;
     }
     
-    fn find_winner(&self, community_cards: [Card;5]) -> Vec<(&Player,([Card;5],Hand))> {
+    fn find_winner(&self, community_cards: [Card;5]) -> usize {
 
-        let mut winners: Vec::<(&Player,([Card;5],Hand))> = Vec::new();
+        let mut winners: Vec::<(usize,([Card;5],Hand))> = Vec::new();
         for player in &self.players {
 
             if player.state== PlayerState::Folded { 
@@ -197,7 +197,7 @@ impl Game {
                 let (_, winner_hand) = winners[0];
                 if best_hand.1 > winner_hand.1 {
                     winners.clear(); 
-                    winners.push((player,best_hand));
+                    winners.push((player.id,best_hand));
                 }
                 else if best_hand.1 == winner_hand.1 {
                     // they have same 
@@ -207,28 +207,35 @@ impl Game {
                     for idx in 0..5 {
                         if new[idx].0 > old[idx].0 {
                             winners.clear(); 
-                            winners.push((player,best_hand));
+                            winners.push((player.id,best_hand));
                             break; 
                         }
                         else if old[idx].0 > new[idx].0 {
                             break; 
                         }
                         else if idx == 4 {
-                            winners.push((player,best_hand));
+                            winners.push((player.id,best_hand));
                         }
                     }
                 }
-            } else {winners.push((player,best_hand));}
+            } else {winners.push((player.id,best_hand));}
         }
         println!("Winning Hand: ");
         Deck::print_cards(&winners[0].1.0);
         
-        return winners; 
+        return winners[0].0; 
     }
-    
-    fn showdown(&mut self, community_cards: [Card;5]) -> usize {
+      
+    fn showdown(&mut self, community_cards: [Card;5], pot: u32) -> usize {
+        // for now just find one winner, fix later to do side pots
+
         println!("Showdown");
-        self.find_winner(community_cards);
+        let winner_id = self.find_winner(community_cards);
+        let winner = self.players
+            .iter_mut()
+            .find(|player| player.id==winner_id)
+            .unwrap();
+        winner.deal_chips(pot);
 
         self.players.retain(|player| player.chips > 0);
         for player in self.players.iter_mut() {
@@ -238,6 +245,11 @@ impl Game {
     }
 
     pub fn play_round(&mut self, dealer: usize){
+        
+        // print!("Stacks: ");
+        // for player in &self.players {
+        //     print!("{}: {}, ", player.name, player.chips);
+        // }
         
         let revealed_card_numbers = [0,3,4,5];
         
@@ -253,17 +265,22 @@ impl Game {
         }
 
         for player in &self.players{
-            println!("{}'s hand:",player.name);
-            Deck::print_cards(&player.hand);
+            player.display();
+            // println!("{}'s hand:",player.name);
+            // Deck::print_cards(&player.hand);
         }
 
+        let mut pot = 0; 
+
         self.players[ (dealer+1) % n_players ].bet_blind(self.small_blind);
-        println!("{} bet {}",self.players[ (dealer+1) % n_players ].name, self.small_blind);
+        pot += self.small_blind; 
+        println!("{} bet blind {}, current_bet: {}, pot: {}",self.players[ (dealer+1) % n_players ].name, self.small_blind, self.small_blind, pot);
         
         self.players[ (dealer+2) % n_players ].bet_blind(self.big_blind);
-        println!("{} bet {}",self.players[ (dealer+2) % n_players ].name, self.big_blind);
+        pot += self.big_blind; 
+        println!("{} bet blind {}, current_bet: {}, pot: {}",self.players[ (dealer+2) % n_players ].name, self.big_blind, self.big_blind, pot);
 
-        action.push(vec![Action::Bet(self.small_blind),Action::Bet(self.big_blind)]);
+        action.push(vec![Action::Raise(self.small_blind),Action::Raise(self.small_blind)]);
 
         let community_cards = std::array::from_fn(|_| deck.deal().unwrap());
 
@@ -271,8 +288,8 @@ impl Game {
         let mut n_all_in = 0; 
         let mut street = 0; 
 
-        let mut pot = 0; 
-        
+        let mut current_bet = self.big_blind;
+
         'street: loop {
             deck.burn_card();
             
@@ -282,14 +299,14 @@ impl Game {
                 Deck::print_cards(&community_cards[0..revealed_upto]);
             }
 
-            let (mut agreed_players, mut bet, mut idx) = if street != 0 {
+            let (mut agreed_players, mut idx) = if street != 0 {
                 action.push(Vec::new());
-                (0,0,1)
-            } else {(1,self.big_blind,3)};
+                (0,1)
+            } else {(0,3)};
             
             while agreed_players + n_all_in + n_folded < n_players {
                 
-                if n_all_in + n_folded == n_players - 1 {break 'street;}
+                // if n_all_in + n_folded == n_players - 1 {break 'street;}
     
                 let player = &mut self.players[(idx+dealer)%n_players];
                 if player.state != PlayerState::Active {
@@ -297,12 +314,13 @@ impl Game {
                     continue; 
                 }
                 
-                let player_action = player.act(pot, &community_cards[..revealed_upto], bet, &action); 
+                let player_bet = player.bet; 
+                let player_action = player.act(pot, &community_cards[..revealed_upto], current_bet-player_bet, &action); 
                 
                 match player_action {
                     Action::Check => {
                         agreed_players+=1; 
-                        println!("{} checked",player.name);
+                        println!("{} checked, current_bet: {}, pot: {}",player.name,current_bet, pot);
                         action[street].push(Action::Check);
                     },
                     Action::Fold => {
@@ -312,35 +330,40 @@ impl Game {
                     },
                     Action::Call => {
                         agreed_players+=1; 
-                        pot += bet; 
-                        println!("{} called",player.name);
+                        // players old bet was player_bet, now its current_bet
+                        pot += current_bet-player_bet; 
+                        println!("{} called {}, current_bet: {}, pot: {}",player.name, current_bet-player_bet, current_bet, pot);
                         action[street].push(Action::Call);
                     },
-                    Action::Bet(player_bet) => {
+                    Action::Raise(raise) => {
+                        // players old bet was player_bet, now its current_bet + raise 
+                        // current bet should be incremented by raise 
                         agreed_players = 1;
-                        bet = player_bet;
-                        pot += bet; 
-                        println!("{} bet {}",player.name, player_bet);
-                        action[street].push(Action::Bet(player_bet));
+                        pot += raise + current_bet - player_bet;
+                        current_bet += raise;
+                        println!("{} raised {}, current_bet: {}, pot: {}",player.name, raise, current_bet, pot);
+                        action[street].push(Action::Raise(raise));
                     },
-                    Action::AllIn(player_bet) => {
+                    Action::AllIn(chips) => {
                         n_all_in += 1;
-                        if player_bet > bet {
-                            agreed_players = 1;
+                        if chips > current_bet - player_bet {
+                            agreed_players = 0;
+                            current_bet = chips; 
                         }
-                        bet = player_bet; 
-                        pot += bet; 
-                        println!("{} went all in for {}",player.name, player_bet);
-                        action[street].push(Action::AllIn(player_bet));
+                        pot += chips; 
+                        println!("{} went all in for {}, current_bet: {}, pot: {}",player.name, chips, current_bet, pot);
+                        action[street].push(Action::AllIn(chips));
                     }
                 }
                 idx = (idx+1) % n_players; 
+                // println!("agreed: {} ,all in: {}, folded: {}", agreed_players, n_all_in, n_folded);
+                // println!(" {} + {} + {} < {} : {}",agreed_players, n_all_in, n_folded, n_players, (agreed_players + n_all_in + n_folded < n_players));
             }
             street +=1 ;
             if street > 3{ break 'street } 
         }
 
-        self.showdown(community_cards);
+        self.showdown(community_cards,pot);
 
     }
 
@@ -380,7 +403,7 @@ mod tests {
             deck.deal().unwrap(),
             deck.deal().unwrap(),
         ];
-        game.showdown(community_cards);
+        game.showdown(community_cards,500);
     }
 
     #[test]
