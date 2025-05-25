@@ -60,7 +60,9 @@ impl Game {
         Game { players, small_blind: 1, big_blind: 2, buyin}
     }
 
-    fn best_combination(&self, rank_sorted_hand: &Vec<Card>) -> ([Card;5],Hand) {
+    fn best_combination(rank_sorted_hand: &Vec<Card>) -> ([Card;5],Hand) {
+        debug_assert!(rank_sorted_hand.windows(2).all(|w| w[0].0 >= w[1].0), "Hand must be sorted in decreasing order by rank");
+        
         let mut ranks: Vec<Vec<Card>> = vec![Vec::new();13];
         for card in rank_sorted_hand {
             // card.0 as usize is index sorted by rank
@@ -97,10 +99,11 @@ impl Game {
         return (hand[..5].try_into().unwrap(),hand_name);
     }
     
-    fn best_straight(&self, rank_sorted_hand: &Vec<Card>) -> Option<([Card;5],Hand)> {
+    fn best_straight(rank_sorted_hand: &Vec<Card>) -> Option<([Card;5],Hand)> {
         // must be sorted in decreasing order
-        // ignoring straight flushes
-
+        debug_assert!(rank_sorted_hand.windows(2).all(|w| w[0].0 >= w[1].0), "Hand must be sorted in decreasing order by rank");
+        
+        // ignoring straight flushes - those are accounted for in best_flush
         let mut hand = Vec::new(); 
         hand.push(rank_sorted_hand[0]);
         for idx in 1..rank_sorted_hand.len() {
@@ -115,8 +118,11 @@ impl Game {
         return None;
     }
     
-    fn best_flush(&self, rank_sorted_hand: &Vec<Card>) -> Option<([Card;5],Hand)> {
+    fn best_flush(rank_sorted_hand: &Vec<Card>) -> Option<([Card;5],Hand)> {
         // sorted in decreasing order
+        Deck::print_cards(rank_sorted_hand);
+        debug_assert!(rank_sorted_hand.windows(2).all(|w| w[0].0 >= w[1].0), "Hand must be sorted in decreasing order by rank");
+
         let mut suits: Vec<Vec<Card>> = vec![Vec::new(), Vec::new(), Vec::new(), Vec::new()];
         for card in rank_sorted_hand {
             match card {
@@ -137,7 +143,7 @@ impl Game {
         for idx in 0..4{
             if suits[idx].len() >= 5 {
                 suits[idx].sort_by_key(|c| std::cmp::Reverse(c.0));
-                let straight_flush = self.best_straight(&suits[idx]);
+                let straight_flush = Game::best_straight(&suits[idx]);
                 match straight_flush {
                     Some((vec,_)) => {
                         match vec[0] {
@@ -152,28 +158,39 @@ impl Game {
         
         return None;
     }
+
+    fn best_hand(mut hand: Vec<Card> ) -> ([Card;5],Hand) {
+        hand.sort_by_key(|card| std::cmp::Reverse(card.0));
+            
+        let flush = Game::best_flush(&hand);
+        let straight = Game::best_straight(&hand);
+        let combination = Game::best_combination(&hand);
+
+        let mut best_hand = combination; 
+        if let Some((v,h)) = flush {
+            if h > best_hand.1 {best_hand = (v,h)}
+        }
+        if let Some((v,h)) = straight {
+            if h > best_hand.1 {best_hand = (v,h)}
+        }
+
+        return best_hand;
+    }
     
     fn find_winner(&self, community_cards: [Card;5]) -> Vec<(&Player,([Card;5],Hand))> {
 
         let mut winners: Vec::<(&Player,([Card;5],Hand))> = Vec::new();
         for player in &self.players {
+
+            if player.state== PlayerState::Folded { 
+                continue;
+            }
             
             let mut hand: Vec<Card> = Vec::new();
             hand.extend_from_slice(&community_cards);
             hand.extend_from_slice(&player.hand);
-            hand.sort_by_key(|card| std::cmp::Reverse(card.0));
-            
-            let flush = self.best_flush(&hand);
-            let straight = self.best_straight(&hand);
-            let combination = self.best_combination(&hand);
 
-            let mut best_hand = combination; 
-            if let Some((v,h)) = flush {
-                if h > best_hand.1 {best_hand = (v,h)}
-            }
-            if let Some((v,h)) = straight {
-                if h > best_hand.1 {best_hand = (v,h)}
-            }
+            let best_hand = Game::best_hand(hand);
 
             // now that we have best hand of this person, compare with earlier best hand and replace; 
             if !winners.is_empty() {
@@ -202,22 +219,6 @@ impl Game {
                     }
                 }
             } else {winners.push((player,best_hand));}
-
-            player.display();
-            println!("Best Hand:");
-            Deck::print_cards(&best_hand.0);
-            // if straight.is_some() {
-            //     println!("Best Straight: ");
-            //     Deck::print_cards(straight.unwrap().0); 
-            // }
-            // if flush.is_some() {
-            //     println!("Best Flush: ");
-            //     Deck::print_cards(flush.unwrap().0); 
-            // }
-            // println!("Best Combination: ");
-            // Deck::print_cards(combination.0);
-
-
         }
         println!("Winning Hand: ");
         Deck::print_cards(&winners[0].1.0);
@@ -227,11 +228,6 @@ impl Game {
     
     fn showdown(&mut self, community_cards: [Card;5]) -> usize {
         println!("Showdown");
-        // for player in self.players.iter_mut() {
-        //     player.display();
-        // }
-        //  let winners = evaluate_winner(players);
-        // distribute_chips(winners)
         self.find_winner(community_cards);
 
         self.players.retain(|player| player.chips > 0);
@@ -249,7 +245,7 @@ impl Game {
         let mut action: Vec<Vec<Action>> = Vec::new(); 
         
         let n_players = self.players.len();
-        if n_players==1  {return;} 
+        if n_players<=1  {return;} 
         for i in 0..2*n_players {
             let idx = (dealer + 1 + i) % n_players;
             self.players[idx].deal_card(deck.deal().unwrap());
@@ -291,10 +287,9 @@ impl Game {
             
             while agreed_players + n_all_in + n_folded < n_players {
                 
-                // println!("Street: {},Agreed: {}, All In: {}, Folded: {}",street,agreed_players,n_all_in,n_folded);
+                if n_all_in + n_folded == n_players - 1 {break 'street;}
     
                 let player = &mut self.players[(idx+dealer)%n_players];
-                // player.display(); 
                 if player.state != PlayerState::Active {
                     idx = (idx + 1) % n_players;
                     continue; 
@@ -370,22 +365,21 @@ mod tests {
     fn test_play_round() {
         let mut game = Game::new(4,500);
         game.play_round(0);
-        // Add assertions here based on expected game state after a round
     }
 
-    // #[test]
-    // fn test_showdown() {
-    //     let mut game = Game::new(4,500);
-    //     let mut deck = Deck::new(); 
-    //     let community_cards = [
-    //         deck.deal().unwrap(),
-    //         deck.deal().unwrap(),
-    //         deck.deal().unwrap(),
-    //         deck.deal().unwrap(),
-    //         deck.deal().unwrap(),
-    //     ];
-    //     game.showdown(community_cards);
-    // }
+    #[test]
+    fn test_showdown() {
+        let mut game = Game::new(4,500);
+        let mut deck = Deck::new(); 
+        let community_cards = [
+            deck.deal().unwrap(),
+            deck.deal().unwrap(),
+            deck.deal().unwrap(),
+            deck.deal().unwrap(),
+            deck.deal().unwrap(),
+        ];
+        game.showdown(community_cards);
+    }
 
     #[test]
     fn test_player_bets() {
@@ -421,8 +415,7 @@ mod tests {
         );
 
         hand.sort_by_key(|x| std::cmp::Reverse(x.0));
-        let game = Game::new(10,500); 
-        let flush = game.best_flush(&hand);
+        let flush = Game::best_flush(&hand);
         assert!(flush.is_none());
     }
     
@@ -439,8 +432,7 @@ mod tests {
         );
 
         hand.sort_by_key(|x| std::cmp::Reverse(x.0));
-        let game = Game::new(10,500); 
-        let flush = game.best_flush(&hand);
+        let flush = Game::best_flush(&hand);
         assert!(flush.unwrap() == ([Card(Ace,Spades),Card(King,Spades),Card(Eight,Spades),Card(Six,Spades),Card(Four,Spades)],Flush));
     }
 
@@ -457,8 +449,7 @@ mod tests {
         );
 
         hand.sort_by_key(|x| std::cmp::Reverse(x.0));
-        let game = Game::new(10,500); 
-        let flush = game.best_flush(&hand);
+        let flush = Game::best_flush(&hand);
         assert!(flush.unwrap() == ([Card(Six,Spades),Card(Five,Spades),Card(Four,Spades),Card(Three,Spades),Card(Two,Spades)],StraightFlush));
     }
 
@@ -476,8 +467,7 @@ mod tests {
         );
 
         hand.sort_by_key(|x| std::cmp::Reverse(x.0));
-        let game = Game::new(10,500); 
-        let flush = game.best_flush(&hand);
+        let flush = Game::best_flush(&hand);
         assert!(flush.unwrap() == ([Card(Ace,Spades),Card(King,Spades),Card(Four,Spades),Card(Three,Spades),Card(Two,Spades)],Flush));
 
     }
@@ -494,9 +484,8 @@ mod tests {
             Card(Jack,Hearts)
         );
 
-        let game = Game::new(10,500); 
         hand.sort_by_key(|card| std::cmp::Reverse(card.0));
-        let straight = game.best_straight(&hand);
+        let straight = Game::best_straight(&hand);
         assert!(straight == Some(([Card(Jack,Hearts),Card(Ten,Spades),Card(Nine,Spades),Card(Eight,Spades),Card(Seven,Hearts)],Straight)))
     }
 
@@ -512,9 +501,8 @@ mod tests {
             Card(Seven,Diamonds)
         );
 
-        let game = Game::new(10,500); 
         hand.sort_by_key(|card| std::cmp::Reverse(card.0));
-        let straight = game.best_straight(&hand);
+        let straight = Game::best_straight(&hand);
         assert!(straight == Some(([Card(Ten,Hearts),Card(Nine,Clubs),Card(Eight,Hearts),Card(Seven,Diamonds),Card(Six,Hearts)],Straight)))
     }
 
@@ -532,14 +520,13 @@ mod tests {
         );
 
         hand.sort_by_key(|x| std::cmp::Reverse(x.0));
-        let game = Game::new(10,500); 
-        let straight = game.best_straight(&hand);
+        let straight = Game::best_straight(&hand);
         assert!(straight.is_none());
     }
 
     #[test]
     fn test_high_card() {
-        let hand = vec!(
+        let mut hand = vec!(
             Card(King,Spades),
             Card(Nine,Spades),
             Card(Three,Diamonds),
@@ -549,14 +536,14 @@ mod tests {
             Card(Five,Hearts)
         );
 
-        let game = Game::new(10,500); 
-        let combination = game.best_combination(&hand);
+        hand.sort_by_key(|x| std::cmp::Reverse(x.0));
+        let combination = Game::best_combination(&hand);
         assert!(combination == ([Card(King,Spades),Card(Jack,Spades),Card(Ten,Spades),Card(Nine,Spades),Card(Seven,Hearts)],HighCard))
     }
 
     #[test]
     fn test_pair() {
-        let hand = vec!(
+        let mut hand = vec!(
             Card(King,Spades),
             Card(Nine,Spades),
             Card(Three,Diamonds),
@@ -566,14 +553,14 @@ mod tests {
             Card(King,Diamonds)
         );
 
-        let game = Game::new(10,500); 
-        let combination = game.best_combination(&hand);
+        hand.sort_by_key(|x| std::cmp::Reverse(x.0));
+        let combination = Game::best_combination(&hand);
         assert!(combination == ([Card(King,Spades),Card(King,Diamonds),Card(Ten,Spades),Card(Nine,Spades),Card(Eight,Hearts)],Pair))
     }
 
     #[test]
     fn test_trips() {
-        let hand = vec!(
+        let mut hand = vec!(
             Card(King,Spades),
             Card(Nine,Spades),
             Card(Three,Diamonds),
@@ -583,14 +570,14 @@ mod tests {
             Card(Seven,Diamonds)
         );
 
-        let game = Game::new(10,500); 
-        let combination = game.best_combination(&hand);
+        hand.sort_by_key(|x| std::cmp::Reverse(x.0));
+        let combination = Game::best_combination(&hand);
         assert!(combination == ([Card(Seven,Hearts),Card(Seven,Clubs),Card(Seven,Diamonds),Card(King,Spades),Card(Ten,Spades)],Trips))
     }
 
     #[test]
     fn test_two_pair() {
-        let hand = vec!(
+        let mut hand = vec!(
             Card(King,Spades),
             Card(Nine,Spades),
             Card(Three,Diamonds),
@@ -600,14 +587,14 @@ mod tests {
             Card(King,Clubs)
         );
 
-        let game = Game::new(10,500); 
-        let combination = game.best_combination(&hand);
+        hand.sort_by_key(|x| std::cmp::Reverse(x.0));
+        let combination = Game::best_combination(&hand);
         assert!(combination == ([Card(King,Spades),Card(King,Clubs),Card(Ten,Spades),Card(Ten,Diamonds),Card(Nine,Spades)],TwoPair))
     }
 
     #[test]
     fn test_full_house() {
-        let hand = vec!(
+        let mut hand = vec!(
             Card(King,Spades),
             Card(King,Hearts),
             Card(Three,Diamonds),
@@ -617,15 +604,15 @@ mod tests {
             Card(King,Clubs)
         );
 
-        let game = Game::new(10,500); 
-        let combination = game.best_combination(&hand);
+        hand.sort_by_key(|x| std::cmp::Reverse(x.0));
+        let combination = Game::best_combination(&hand);
         assert!(combination == ([Card(King,Spades),Card(King,Hearts),Card(King,Clubs),Card(Three,Diamonds),Card(Three,Spades)],FullHouse))
 
     }
 
     #[test]
     fn test_quads() {
-        let hand = vec!(
+        let mut hand = vec!(
             Card(King,Spades),
             Card(King,Hearts),
             Card(Three,Diamonds),
@@ -635,9 +622,38 @@ mod tests {
             Card(King,Clubs)
         );
 
-        let game = Game::new(10,500); 
-        let combination = game.best_combination(&hand);
+        hand.sort_by_key(|x| std::cmp::Reverse(x.0));
+        let combination = Game::best_combination(&hand);
         assert!(combination == ([Card(King,Spades),Card(King,Hearts),Card(King,Diamonds),Card(King,Clubs),Card(Ten,Spades)],Quads))
 
+    }
+
+    // for looking at random tests because its cool 
+    // #[test]
+    fn test_loop() {
+        loop {
+
+            let mut d = Deck::new(); 
+            let hand  = vec![
+                d.deal().unwrap(), 
+                d.deal().unwrap(), 
+                d.deal().unwrap(), 
+                d.deal().unwrap(), 
+                d.deal().unwrap(), 
+                d.deal().unwrap(), 
+                d.deal().unwrap()
+            ];
+            Deck::print_cards(&hand);
+            let best_hand = Game::best_hand(hand);
+            Deck::print_cards(&best_hand.0);
+
+            let mut input = String::new();
+            println!("Press Enter to continue or type 'exit' to quit: ");
+            std::io::stdin().read_line(&mut input).unwrap();
+            if input.trim().eq_ignore_ascii_case("exit") {
+                break;
+            }
+
+        }
     }
 }

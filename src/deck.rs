@@ -1,5 +1,6 @@
 use rand::Rng;
 use std::cmp::Ordering;
+use std::ops::Add; 
 
 #[derive(Debug, Hash, PartialEq, Eq, Copy, Clone)]
 pub enum Suit {
@@ -112,8 +113,7 @@ impl Ord for Rank {
         self_index.cmp(&other_index)
     }
 }
-
-impl std::ops::Add<u8> for Rank {
+impl Add<u8> for Rank {
     type Output = Option<Rank>;
 
     fn add(self, rhs: u8) -> Option<Rank> {
@@ -290,6 +290,23 @@ impl Deck {
         let index = rand::thread_rng().gen_range(0..self.deck.len());
         let card = self.deck.swap_remove(index);
         Some(card)
+    }
+
+    pub fn burn_card(&mut self) {
+        if self.deck.len() == 0 {
+            return;
+        }
+        let index = rand::thread_rng().gen_range(0..self.deck.len());
+        self.deck.swap_remove(index);
+    }
+
+    pub fn deal_specific(&mut self, rank: Rank, suit: Suit) -> Option<Card> {
+        if let Some(pos) = self.deck.iter().position(|c| c.0 == rank && c.1 == suit) {
+            Some(self.deck.swap_remove(pos))
+        } else {
+            None
+        }
+
     }
 
     pub fn print_cards<T: AsRef<[Card]>>(cards: T) {

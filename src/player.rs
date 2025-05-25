@@ -30,18 +30,45 @@ impl Player {
         Player { name, chips, hand: Vec::new(), state: PlayerState::Active , bet: 0}
     }
     pub fn act(&mut self, pot: u32, board: &[Card], bet: u32, action:&Vec<Vec<Action>>) -> Action {
+        
         if self.bet < bet {
-            if self.chips > bet - self.bet {
-                return Action::Call;
+            let call_amount = bet - self.bet;
+            if self.chips > call_amount {
+                // Call if we have enough chips
+                if rand::random::<bool>() {
+                    return  self.call(call_amount);
+                } else {
+                    return self.fold();
+                }
+            } else {
+                if rand::random::<bool>() {
+                    return self.go_all_in();
+                } else {
+                    return self.fold();
+                }
             }
-            return self.go_all_in(); 
         }
-        return Action::Check;
+    
+        if self.chips > 0 {
+            let bet_amount = pot / 2;
+            if bet_amount > 0 && bet_amount <= self.chips {
+                self.bet += bet_amount;
+                self.chips -= bet_amount;
+                return Action::Bet(bet_amount);
+            }
+        }
+    
+        Action::Check
+
     }
 
     pub fn display(&self) {
         println!("{}: Stack: {}, Bet: {}, State: {:?}",self.name, self.chips, self.bet, self.state);
         Deck::print_cards(&[self.hand[0],self.hand[1]]);
+    }
+
+    pub fn deal_chips(&mut self, chips: u32) {
+        self.chips += chips; 
     }
 
     pub fn deal_card(&mut self, card: Card) {
@@ -55,6 +82,17 @@ impl Player {
         self.state = PlayerState::AllIn;
         self.bet += chips;
         return Action::AllIn(chips);
+    }
+
+    fn fold(&mut self) -> Action {
+        self.state = PlayerState::Folded;
+        return Action::Fold;
+    }
+
+    fn call(&mut self, call_amount: u32) -> Action {
+        self.bet += call_amount;
+        self.chips -= call_amount;
+        return Action::Call;
     }
 
     pub fn bet_blind(&mut self, blind: u32) {
