@@ -357,7 +357,7 @@ impl Game {
                         n_all_in_this_street += 1;
                         if chips > current_bet - player_bet {
                             callers = 0;
-                            current_bet = chips; 
+                            current_bet = chips + player_bet; 
                         }
                         pot += chips; 
                         println!("{} went all in for {}, current_bet: {}, pot: {}",player.name, chips, current_bet, pot);
