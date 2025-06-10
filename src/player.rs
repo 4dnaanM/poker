@@ -28,9 +28,11 @@ pub struct Player {
 }
 
 impl Player {
+
     pub fn new(id: usize, name: String, chips: u32) -> Player {
         Player { id, name, chips, hand: Vec::new(), state: PlayerState::Active , bet: 0}
     }
+    
     pub fn act(&mut self, pot: u32, board: &[Card], to_call: u32, action:&Vec<Vec<Action>>) -> Action {
         
         let mut rng = rand::thread_rng();
@@ -130,7 +132,7 @@ impl Player {
     }
 
     pub fn bet_blind(&mut self, blind: u32) {
-        if self.chips < blind {
+        if self.chips <= blind {
             self.go_all_in(); 
             return; 
         }

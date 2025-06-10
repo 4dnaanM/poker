@@ -238,13 +238,6 @@ impl Card {
                 format!("|______{}|",String::from(self.0))
             ),
             Rank::King => (
-                // format!("|{}      |",String::from(self.0)),
-                // format!("|       |"),
-                // format!("|       |"),
-                // format!("|   {}   |",String::from(self.1)),
-                // format!("|       |"),
-                // format!("|       |"),
-                // format!("|______{}|",String::from(self.0))
                 format!("|{}      |",String::from(self.0)),
                 format!("| {}{}{}{}{} |",String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1)),
                 format!("| {}{}{}{}{} |",String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1)),

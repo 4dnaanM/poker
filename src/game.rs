@@ -1,5 +1,6 @@
 use crate::deck::{Deck, Card, Suit::*, Rank::*};
 use crate::player::{Action, Player, PlayerState};
+
 #[derive(Eq, PartialEq, Debug, Clone, Copy)]
 pub enum Hand {
     RoyalFlush, 
@@ -179,6 +180,10 @@ impl Game {
     
     fn find_winner(&self, community_cards: [Card;5]) -> usize {
 
+        if self.players.len() - self.players.iter().filter(|p| (p.state == PlayerState::Folded) ).count() == 1 {
+            println!("Only one remaining player");    
+        }
+        
         let mut winners: Vec::<(usize,([Card;5],Hand))> = Vec::new();
         for player in &self.players {
 
@@ -245,6 +250,10 @@ impl Game {
     }
 
     pub fn play_round(&mut self, dealer: usize){
+
+        // issues: 
+        // 1. Test: Can't allow raise if everyone else all in
+        // 2. Store pots and active players in pots, implement side pots
         
         // print!("Stacks: ");
         // for player in &self.players {
@@ -283,14 +292,12 @@ impl Game {
         action.push(vec![Action::Raise(self.small_blind),Action::Raise(self.small_blind)]);
 
         let community_cards = std::array::from_fn(|_| deck.deal().unwrap());
-
-        let mut n_folded = 0; 
-        let mut n_all_in = 0; 
         let mut street = 0; 
-
         let mut current_bet = self.big_blind;
 
         'street: loop {
+            let mut n_active = self.players.iter().filter(|p| p.state == PlayerState::Active).count(); 
+            if n_active<=1 {break}; 
             deck.burn_card();
             
             let revealed_upto = revealed_card_numbers[street];
@@ -299,14 +306,16 @@ impl Game {
                 Deck::print_cards(&community_cards[0..revealed_upto]);
             }
 
-            let (mut agreed_players, mut idx) = if street != 0 {
+            let  mut idx = if street != 0 {
                 action.push(Vec::new());
-                (0,1)
-            } else {(0,3)};
+                1
+            } else {3};
+
+
+            let mut callers = 0;  
+            let mut n_all_in_this_street = 0; 
             
-            while agreed_players + n_all_in + n_folded < n_players {
-                
-                // if n_all_in + n_folded == n_players - 1 {break 'street;}
+            while callers + n_all_in_this_street < n_active {
     
                 let player = &mut self.players[(idx+dealer)%n_players];
                 if player.state != PlayerState::Active {
@@ -319,17 +328,17 @@ impl Game {
                 
                 match player_action {
                     Action::Check => {
-                        agreed_players+=1; 
+                        callers+=1; 
                         println!("{} checked, current_bet: {}, pot: {}",player.name,current_bet, pot);
                         action[street].push(Action::Check);
                     },
                     Action::Fold => {
-                        n_folded += 1; 
+                        n_active -=1;  
                         println!("{} folded",player.name);
                         action[street].push(Action::Fold);
                     },
                     Action::Call => {
-                        agreed_players+=1; 
+                        callers+=1; 
                         // players old bet was player_bet, now its current_bet
                         pot += current_bet-player_bet; 
                         println!("{} called {}, current_bet: {}, pot: {}",player.name, current_bet-player_bet, current_bet, pot);
@@ -338,16 +347,16 @@ impl Game {
                     Action::Raise(raise) => {
                         // players old bet was player_bet, now its current_bet + raise 
                         // current bet should be incremented by raise 
-                        agreed_players = 1;
+                        callers = 1;
                         pot += raise + current_bet - player_bet;
                         current_bet += raise;
                         println!("{} raised {}, current_bet: {}, pot: {}",player.name, raise, current_bet, pot);
                         action[street].push(Action::Raise(raise));
                     },
                     Action::AllIn(chips) => {
-                        n_all_in += 1;
+                        n_all_in_this_street += 1;
                         if chips > current_bet - player_bet {
-                            agreed_players = 0;
+                            callers = 0;
                             current_bet = chips; 
                         }
                         pot += chips; 
@@ -356,6 +365,8 @@ impl Game {
                     }
                 }
                 idx = (idx+1) % n_players; 
+
+                if n_active <=1 {break 'street}
                 // println!("agreed: {} ,all in: {}, folded: {}", agreed_players, n_all_in, n_folded);
                 // println!(" {} + {} + {} < {} : {}",agreed_players, n_all_in, n_folded, n_players, (agreed_players + n_all_in + n_folded < n_players));
             }
@@ -363,7 +374,7 @@ impl Game {
             if street > 3{ break 'street } 
         }
 
-        self.showdown(community_cards,pot);
+        self.showdown(community_cards,pot); 
 
     }
 
@@ -419,6 +430,7 @@ mod tests {
 
         game.play_round(dealer);
     }
+    
     #[test]
     fn test_play_multiple_rounds(){
         let mut game = Game::new(3,500);
@@ -561,7 +573,6 @@ mod tests {
         let straight = Game::best_straight(&hand);
         assert!(straight == Some(([Card(Ten,Hearts),Card(Nine,Clubs),Card(Eight,Hearts),Card(Seven,Diamonds),Card(Six,Hearts)],Straight)))
     }
-
 
     #[test]
     fn test_no_wraparound_straight() {
