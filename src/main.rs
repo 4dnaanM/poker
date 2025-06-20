@@ -1,6 +1,8 @@
 mod deck; 
+mod utils;
 mod game; 
 mod player;
+
 
 use deck::Deck;
 use game::Game;
