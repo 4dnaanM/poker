@@ -40,14 +40,16 @@ impl Game {
         Game { players, small_blind: 1, big_blind: 2, buyin}
     }
     
-    fn find_winner(&self, community_cards: [Card;5]) -> usize {
+    fn find_winner(community_cards: [Card;5], players: &Vec<Player>) -> usize {
 
-        if self.players.len() - self.players.iter().filter(|p| (p.state == PlayerState::Folded) ).count() == 1 {
+        // havent implemented split pots
+
+        if players.len() - players.iter().filter(|p| (p.state == PlayerState::Folded) ).count() == 1 {
             println!("Only one remaining player");    
         }
         
         let mut winners: Vec::<(usize,([Card;5],Hand))> = Vec::new();
-        for player in &self.players {
+        for player in players {
 
             if player.state== PlayerState::Folded { 
                 continue;
@@ -93,17 +95,41 @@ impl Game {
         return winners[0].0; 
     }
       
-    fn showdown(&mut self, community_cards: [Card;5], pots: Vec<u32>, all_in_player_ids: Vec<Vec<usize>>) -> usize {
+    fn showdown(&mut self, community_cards: [Card;5], mut pots: Vec<u32>, all_in_player_ids: Vec<Vec<usize>>) -> usize {
         // for now just find one winner, fix later to do side pots
-        let pot = pots.iter().sum();
+        let max_pot = pots.iter().sum();
 
         println!("Showdown");
-        let winner_id = self.find_winner(community_cards);
-        let winner = self.players
-            .iter_mut()
-            .find(|player| player.id==winner_id)
-            .unwrap();
-        winner.deal_chips(pot);
+        let mut pot_distributed = 0; 
+        let mut players = self.players.clone(); 
+        
+        while pot_distributed < max_pot {
+            let winner_id = Game::find_winner(community_cards, &players);
+            let mut pot = 0; 
+            for idx in 0..=3 {
+                pot+=pots[idx];
+                pots[idx] = 0;
+                if all_in_player_ids[idx].contains(&winner_id) {
+                    break; 
+                }
+            }
+            let (idx, winner) = players
+                .iter_mut()
+                .enumerate()
+                .find(|(_, player)| player.id == winner_id)
+                .unwrap();
+            winner.deal_chips(pot);
+            players.remove(idx);
+            
+            pot_distributed+=pot;
+            // println!("Side Pot: Player {} got {} chips", winner_id,pot);
+        }
+        // let winner_id = self.find_winner(community_cards,);
+        // let winner = self.players
+        //     .iter_mut()
+        //     .find(|player| player.id==winner_id)
+        //     .unwrap();
+        // winner.deal_chips(pot);
 
         self.players.retain(|player| player.chips > 0);
         for player in self.players.iter_mut() {
@@ -141,8 +167,8 @@ impl Game {
             // Deck::print_cards(&player.hand);
         }
 
-        let mut pots :Vec<u32> = vec![]; 
-        let mut all_in_player_ids : Vec<Vec<usize>> = vec![];
+        let mut pots :Vec<u32> = vec![0,0,0,0]; 
+        let mut all_in_player_ids : Vec<Vec<usize>> = vec![vec![],vec![],vec![],vec![]];
         let mut pot = 0; 
 
         self.players[ (dealer+1) % n_players ].bet_blind(self.small_blind);
@@ -160,7 +186,6 @@ impl Game {
         let mut current_bet = self.big_blind;
 
         'street: loop {
-            all_in_player_ids.push(vec![]);
             let mut n_active = self.players.iter().filter(|p| p.state == PlayerState::Active).count(); 
             if n_active<=1 {break}; 
             // deck.burn_card(); // what
@@ -219,7 +244,7 @@ impl Game {
                     },
                     Action::AllIn(chips) => {
                         n_all_in_this_street += 1;
-                        all_in_player_ids.last_mut().unwrap().push(player.id);
+                        all_in_player_ids[street].push(player.id);
                         if chips > current_bet - player_bet {
                             callers = 0;
                             current_bet = chips + player_bet; 
@@ -235,9 +260,10 @@ impl Game {
                 // println!("agreed: {} ,all in: {}, folded: {}", agreed_players, n_all_in, n_folded);
                 // println!(" {} + {} + {} < {} : {}",agreed_players, n_all_in, n_folded, n_players, (agreed_players + n_all_in + n_folded < n_players));
             }
+            pots[street]=pot;
             street +=1 ;
-            pots.push(pot);
             pot = 0; 
+            println!("Pots: {:?}",pots);
             if street > 3{ break 'street } 
         }
 
