@@ -113,7 +113,7 @@ impl Game {
                     break; 
                 }
             }
-            let (idx, winner) = players
+            let (idx, winner) = self.players
                 .iter_mut()
                 .enumerate()
                 .find(|(_, player)| player.id == winner_id)
@@ -124,12 +124,6 @@ impl Game {
             pot_distributed+=pot;
             // println!("Side Pot: Player {} got {} chips", winner_id,pot);
         }
-        // let winner_id = self.find_winner(community_cards,);
-        // let winner = self.players
-        //     .iter_mut()
-        //     .find(|player| player.id==winner_id)
-        //     .unwrap();
-        // winner.deal_chips(pot);
 
         self.players.retain(|player| player.chips > 0);
         for player in self.players.iter_mut() {
