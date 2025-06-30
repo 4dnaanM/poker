@@ -134,8 +134,7 @@ impl Game {
 
     pub fn play_round(&mut self, dealer: usize){
 
-        // 1. Important Test: Can't allow raise if everyone else all in
-        // 2. Store pots and active players in pots, implement side pots
+        // Important Test: Can't allow raise if everyone else all in
         
         // print!("Stacks: ");
         // for player in &self.players {
@@ -301,7 +300,7 @@ mod tests {
             deck.deal().unwrap(),
             deck.deal().unwrap(),
         ];
-        game.showdown(community_cards,500);
+        game.showdown(community_cards,vec![500,0,0,0],vec![vec![],vec![],vec![],vec![]]);
     }
 
     #[test]
