@@ -1,3 +1,5 @@
+use std::vec;
+
 use crate::deck::{Deck, Card};
 use crate::player::{Action, Player, PlayerState};
 use crate::utils::{Hand,HandComparator};
@@ -7,6 +9,20 @@ pub struct Game {
     small_blind: u32,
     big_blind: u32,
     buyin: u32
+}
+enum BettingRoundName{
+    Preflop, 
+    Flop, 
+    Turn, 
+    River
+}
+struct BettingRoundParams{
+    round: BettingRoundName,
+    pot: i32,
+    action: Vec<Action>,
+    n_active: usize, 
+
+
 }
 
 impl Game {
@@ -77,8 +93,9 @@ impl Game {
         return winners[0].0; 
     }
       
-    fn showdown(&mut self, community_cards: [Card;5], pot: u32) -> usize {
+    fn showdown(&mut self, community_cards: [Card;5], pots: Vec<u32>, all_in_player_ids: Vec<Vec<usize>>) -> usize {
         // for now just find one winner, fix later to do side pots
+        let pot = pots.iter().sum();
 
         println!("Showdown");
         let winner_id = self.find_winner(community_cards);
@@ -97,7 +114,7 @@ impl Game {
 
     pub fn play_round(&mut self, dealer: usize){
 
-        // 1. Test: Can't allow raise if everyone else all in
+        // 1. Important Test: Can't allow raise if everyone else all in
         // 2. Store pots and active players in pots, implement side pots
         
         // print!("Stacks: ");
@@ -124,6 +141,8 @@ impl Game {
             // Deck::print_cards(&player.hand);
         }
 
+        let mut pots :Vec<u32> = vec![]; 
+        let mut all_in_player_ids : Vec<Vec<usize>> = vec![];
         let mut pot = 0; 
 
         self.players[ (dealer+1) % n_players ].bet_blind(self.small_blind);
@@ -141,9 +160,10 @@ impl Game {
         let mut current_bet = self.big_blind;
 
         'street: loop {
+            all_in_player_ids.push(vec![]);
             let mut n_active = self.players.iter().filter(|p| p.state == PlayerState::Active).count(); 
             if n_active<=1 {break}; 
-            deck.burn_card();
+            // deck.burn_card(); // what
             
             let revealed_upto = revealed_card_numbers[street];
 
@@ -155,7 +175,6 @@ impl Game {
                 action.push(Vec::new());
                 1
             } else {3};
-
 
             let mut callers = 0;  
             let mut n_all_in_this_street = 0; 
@@ -200,6 +219,7 @@ impl Game {
                     },
                     Action::AllIn(chips) => {
                         n_all_in_this_street += 1;
+                        all_in_player_ids.last_mut().unwrap().push(player.id);
                         if chips > current_bet - player_bet {
                             callers = 0;
                             current_bet = chips + player_bet; 
@@ -216,10 +236,12 @@ impl Game {
                 // println!(" {} + {} + {} < {} : {}",agreed_players, n_all_in, n_folded, n_players, (agreed_players + n_all_in + n_folded < n_players));
             }
             street +=1 ;
+            pots.push(pot);
+            pot = 0; 
             if street > 3{ break 'street } 
         }
 
-        self.showdown(community_cards,pot); 
+        self.showdown(community_cards,pots, all_in_player_ids); 
 
     }
 
