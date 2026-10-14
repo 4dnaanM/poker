@@ -1,6 +1,6 @@
 use rand::Rng;
 use std::cmp::Ordering;
-use std::ops::Add; 
+use std::ops::Add;
 
 #[derive(Debug, Hash, PartialEq, Eq, Copy, Clone)]
 pub enum Suit {
@@ -126,137 +126,255 @@ impl Add<u8> for Rank {
 #[derive(Debug, Hash, PartialEq, Eq, Copy, Clone)]
 pub struct Card(pub Rank, pub Suit);
 impl Card {
-    pub fn get_display_lines(&self) -> [String;8] {
-        let first_line = format!("_________");
-        let (second_line, third_line,fourth_line, fifth_line, sixth_line, seventh_line, eighth_line) = match self.0 {
+    pub fn get_display_lines(&self) -> [String; 8] {
+        let first_line = "_________".to_string();
+        let (
+            second_line,
+            third_line,
+            fourth_line,
+            fifth_line,
+            sixth_line,
+            seventh_line,
+            eighth_line,
+        ) = match self.0 {
             Rank::Ace => (
-                format!("|{}      |",String::from(self.0)),
-                format!("|       |"),
-                format!("|       |"),
-                format!("|   {}   |",String::from(self.1)),
-                format!("|       |"),
-                format!("|       |"),
-                format!("|______{}|",String::from(self.0))
+                format!("|{}      |", String::from(self.0)),
+                "|       |".to_string(),
+                "|       |".to_string(),
+                format!("|   {}   |", String::from(self.1)),
+                "|       |".to_string(),
+                "|       |".to_string(),
+                format!("|______{}|", String::from(self.0)),
             ),
             Rank::Two => (
-                format!("|{}      |",String::from(self.0)),
-                format!("|   {}   |",String::from(self.1)),
-                format!("|       |"),
-                format!("|       |"),
-                format!("|       |"),
-                format!("|   {}   |",String::from(self.1)),
-                format!("|______{}|",String::from(self.0))
+                format!("|{}      |", String::from(self.0)),
+                format!("|   {}   |", String::from(self.1)),
+                "|       |".to_string(),
+                "|       |".to_string(),
+                "|       |".to_string(),
+                format!("|   {}   |", String::from(self.1)),
+                format!("|______{}|", String::from(self.0)),
             ),
             Rank::Three => (
-                format!("|{}      |",String::from(self.0)),
-                format!("|   {}   |",String::from(self.1)),
-                format!("|       |"),
-                format!("|   {}   |",String::from(self.1)),
-                format!("|       |"),
-                format!("|   {}   |",String::from(self.1)),
-                format!("|______{}|",String::from(self.0))
+                format!("|{}      |", String::from(self.0)),
+                format!("|   {}   |", String::from(self.1)),
+                "|       |".to_string(),
+                format!("|   {}   |", String::from(self.1)),
+                "|       |".to_string(),
+                format!("|   {}   |", String::from(self.1)),
+                format!("|______{}|", String::from(self.0)),
             ),
             Rank::Four => (
-                format!("|{}      |",String::from(self.0)),
-                format!("| {}   {} |",String::from(self.1), String::from(self.1)),
-                format!("|       |"),
-                format!("|       |"),
-                format!("|       |"),
-                format!("| {}   {} |",String::from(self.1), String::from(self.1)),
-                format!("|______{}|",String::from(self.0))
+                format!("|{}      |", String::from(self.0)),
+                format!("| {}   {} |", String::from(self.1), String::from(self.1)),
+                "|       |".to_string(),
+                "|       |".to_string(),
+                "|       |".to_string(),
+                format!("| {}   {} |", String::from(self.1), String::from(self.1)),
+                format!("|______{}|", String::from(self.0)),
             ),
             Rank::Five => (
-                format!("|{}      |",String::from(self.0)),
-                format!("| {}   {} |",String::from(self.1), String::from(self.1)),
-                format!("|       |"),
-                format!("|   {}   |",String::from(self.1)),
-                format!("|       |"),
-                format!("| {}   {} |",String::from(self.1), String::from(self.1)),
-                format!("|______{}|",String::from(self.0))
+                format!("|{}      |", String::from(self.0)),
+                format!("| {}   {} |", String::from(self.1), String::from(self.1)),
+                "|       |".to_string(),
+                format!("|   {}   |", String::from(self.1)),
+                "|       |".to_string(),
+                format!("| {}   {} |", String::from(self.1), String::from(self.1)),
+                format!("|______{}|", String::from(self.0)),
             ),
             Rank::Six => (
-                format!("|{}      |",String::from(self.0)),
-                format!("| {}   {} |",String::from(self.1), String::from(self.1)),
-                format!("|       |"),
-                format!("| {}   {} |",String::from(self.1), String::from(self.1)),
-                format!("|       |"),
-                format!("| {}   {} |",String::from(self.1), String::from(self.1)),
-                format!("|______{}|",String::from(self.0))
+                format!("|{}      |", String::from(self.0)),
+                format!("| {}   {} |", String::from(self.1), String::from(self.1)),
+                "|       |".to_string(),
+                format!("| {}   {} |", String::from(self.1), String::from(self.1)),
+                "|       |".to_string(),
+                format!("| {}   {} |", String::from(self.1), String::from(self.1)),
+                format!("|______{}|", String::from(self.0)),
             ),
             Rank::Seven => (
-                format!("|{}      |",String::from(self.0)),
-                format!("| {}   {} |",String::from(self.1), String::from(self.1)),
-                format!("|   {}   |",String::from(self.1)),
-                format!("| {}   {} |",String::from(self.1), String::from(self.1)),
-                format!("|       |"),
-                format!("| {}   {} |",String::from(self.1), String::from(self.1)),
-                format!("|______{}|",String::from(self.0))
+                format!("|{}      |", String::from(self.0)),
+                format!("| {}   {} |", String::from(self.1), String::from(self.1)),
+                format!("|   {}   |", String::from(self.1)),
+                format!("| {}   {} |", String::from(self.1), String::from(self.1)),
+                "|       |".to_string(),
+                format!("| {}   {} |", String::from(self.1), String::from(self.1)),
+                format!("|______{}|", String::from(self.0)),
             ),
             Rank::Eight => (
-                format!("|{}      |",String::from(self.0)),
-                format!("| {}   {} |",String::from(self.1), String::from(self.1)),
-                format!("|   {}   |",String::from(self.1)),
-                format!("| {}   {} |",String::from(self.1), String::from(self.1)),
-                format!("|   {}   |",String::from(self.1)),
-                format!("| {}   {} |",String::from(self.1), String::from(self.1)),
-                format!("|______{}|",String::from(self.0))
+                format!("|{}      |", String::from(self.0)),
+                format!("| {}   {} |", String::from(self.1), String::from(self.1)),
+                format!("|   {}   |", String::from(self.1)),
+                format!("| {}   {} |", String::from(self.1), String::from(self.1)),
+                format!("|   {}   |", String::from(self.1)),
+                format!("| {}   {} |", String::from(self.1), String::from(self.1)),
+                format!("|______{}|", String::from(self.0)),
             ),
             Rank::Nine => (
-                format!("|{}      |",String::from(self.0)),
-                format!("| {}   {} |",String::from(self.1), String::from(self.1)),
-                format!("|   {}   |",String::from(self.1)),
-                format!("| {} {} {} |",String::from(self.1), String::from(self.1),String::from(self.1)),
-                format!("|   {}   |",String::from(self.1)),
-                format!("| {}   {} |",String::from(self.1), String::from(self.1)),
-                format!("|______{}|",String::from(self.0))
+                format!("|{}      |", String::from(self.0)),
+                format!("| {}   {} |", String::from(self.1), String::from(self.1)),
+                format!("|   {}   |", String::from(self.1)),
+                format!(
+                    "| {} {} {} |",
+                    String::from(self.1),
+                    String::from(self.1),
+                    String::from(self.1)
+                ),
+                format!("|   {}   |", String::from(self.1)),
+                format!("| {}   {} |", String::from(self.1), String::from(self.1)),
+                format!("|______{}|", String::from(self.0)),
             ),
             Rank::Ten => (
-                format!("|{}     |",String::from(self.0)),
-                format!("| {}   {} |",String::from(self.1), String::from(self.1)),
-                format!("| {}   {} |",String::from(self.1), String::from(self.1)),
-                format!("| {}   {} |",String::from(self.1), String::from(self.1)),
-                format!("| {}   {} |",String::from(self.1), String::from(self.1)),
-                format!("| {}   {} |",String::from(self.1), String::from(self.1)),
-                format!("|_____{}|",String::from(self.0))
+                format!("|{}     |", String::from(self.0)),
+                format!("| {}   {} |", String::from(self.1), String::from(self.1)),
+                format!("| {}   {} |", String::from(self.1), String::from(self.1)),
+                format!("| {}   {} |", String::from(self.1), String::from(self.1)),
+                format!("| {}   {} |", String::from(self.1), String::from(self.1)),
+                format!("| {}   {} |", String::from(self.1), String::from(self.1)),
+                format!("|_____{}|", String::from(self.0)),
             ),
             Rank::Jack => (
-                format!("|{}      |",String::from(self.0)),
-                format!("| {}{}{}{}{} |",String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1)),
-                format!("| {}{}{}{}{} |",String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1)),
-                format!("| {}{}{}{}{} |",String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1)),
-                format!("| {}{}{}{}{} |",String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1)),
-                format!("| {}{}{}{}{} |",String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1)),
-                format!("|______{}|",String::from(self.0))
+                format!("|{}      |", String::from(self.0)),
+                format!(
+                    "| {}{}{}{}{} |",
+                    String::from(self.1),
+                    String::from(self.1),
+                    String::from(self.1),
+                    String::from(self.1),
+                    String::from(self.1)
+                ),
+                format!(
+                    "| {}{}{}{}{} |",
+                    String::from(self.1),
+                    String::from(self.1),
+                    String::from(self.1),
+                    String::from(self.1),
+                    String::from(self.1)
+                ),
+                format!(
+                    "| {}{}{}{}{} |",
+                    String::from(self.1),
+                    String::from(self.1),
+                    String::from(self.1),
+                    String::from(self.1),
+                    String::from(self.1)
+                ),
+                format!(
+                    "| {}{}{}{}{} |",
+                    String::from(self.1),
+                    String::from(self.1),
+                    String::from(self.1),
+                    String::from(self.1),
+                    String::from(self.1)
+                ),
+                format!(
+                    "| {}{}{}{}{} |",
+                    String::from(self.1),
+                    String::from(self.1),
+                    String::from(self.1),
+                    String::from(self.1),
+                    String::from(self.1)
+                ),
+                format!("|______{}|", String::from(self.0)),
             ),
             Rank::Queen => (
-                format!("|{}      |",String::from(self.0)),
-                format!("| {}{}{}{}{} |",String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1)),
-                format!("| {}{}{}{}{} |",String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1)),
-                format!("| {}{}{}{}{} |",String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1)),
-                format!("| {}{}{}{}{} |",String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1)),
-                format!("| {}{}{}{}{} |",String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1)),
-                format!("|______{}|",String::from(self.0))
+                format!("|{}      |", String::from(self.0)),
+                format!(
+                    "| {}{}{}{}{} |",
+                    String::from(self.1),
+                    String::from(self.1),
+                    String::from(self.1),
+                    String::from(self.1),
+                    String::from(self.1)
+                ),
+                format!(
+                    "| {}{}{}{}{} |",
+                    String::from(self.1),
+                    String::from(self.1),
+                    String::from(self.1),
+                    String::from(self.1),
+                    String::from(self.1)
+                ),
+                format!(
+                    "| {}{}{}{}{} |",
+                    String::from(self.1),
+                    String::from(self.1),
+                    String::from(self.1),
+                    String::from(self.1),
+                    String::from(self.1)
+                ),
+                format!(
+                    "| {}{}{}{}{} |",
+                    String::from(self.1),
+                    String::from(self.1),
+                    String::from(self.1),
+                    String::from(self.1),
+                    String::from(self.1)
+                ),
+                format!(
+                    "| {}{}{}{}{} |",
+                    String::from(self.1),
+                    String::from(self.1),
+                    String::from(self.1),
+                    String::from(self.1),
+                    String::from(self.1)
+                ),
+                format!("|______{}|", String::from(self.0)),
             ),
             Rank::King => (
-                format!("|{}      |",String::from(self.0)),
-                format!("| {}{}{}{}{} |",String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1)),
-                format!("| {}{}{}{}{} |",String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1)),
-                format!("| {}{}{}{}{} |",String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1)),
-                format!("| {}{}{}{}{} |",String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1)),
-                format!("| {}{}{}{}{} |",String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1),String::from(self.1)),
-                format!("|______{}|",String::from(self.0))
-            )
+                format!("|{}      |", String::from(self.0)),
+                format!(
+                    "| {}{}{}{}{} |",
+                    String::from(self.1),
+                    String::from(self.1),
+                    String::from(self.1),
+                    String::from(self.1),
+                    String::from(self.1)
+                ),
+                format!(
+                    "| {}{}{}{}{} |",
+                    String::from(self.1),
+                    String::from(self.1),
+                    String::from(self.1),
+                    String::from(self.1),
+                    String::from(self.1)
+                ),
+                format!(
+                    "| {}{}{}{}{} |",
+                    String::from(self.1),
+                    String::from(self.1),
+                    String::from(self.1),
+                    String::from(self.1),
+                    String::from(self.1)
+                ),
+                format!(
+                    "| {}{}{}{}{} |",
+                    String::from(self.1),
+                    String::from(self.1),
+                    String::from(self.1),
+                    String::from(self.1),
+                    String::from(self.1)
+                ),
+                format!(
+                    "| {}{}{}{}{} |",
+                    String::from(self.1),
+                    String::from(self.1),
+                    String::from(self.1),
+                    String::from(self.1),
+                    String::from(self.1)
+                ),
+                format!("|______{}|", String::from(self.0)),
+            ),
         };
 
         [
-            first_line, 
-            second_line, 
-            third_line, 
-            fourth_line, 
-            fifth_line, 
+            first_line,
+            second_line,
+            third_line,
+            fourth_line,
+            fifth_line,
             sixth_line,
             seventh_line,
-            eighth_line
+            eighth_line,
         ]
     }
 }
@@ -268,7 +386,7 @@ pub struct Deck {
 impl Deck {
     pub fn new() -> Deck {
         let mut deck = Vec::new();
-        for suit in vec![Suit::Hearts, Suit::Diamonds, Suit::Clubs, Suit::Spades] {
+        for suit in [Suit::Hearts, Suit::Diamonds, Suit::Clubs, Suit::Spades] {
             for rank in RANK_ORDER {
                 deck.push(Card(*rank, suit));
             }
@@ -277,7 +395,7 @@ impl Deck {
     }
 
     pub fn deal(&mut self) -> Option<Card> {
-        if self.deck.len() == 0 {
+        if self.deck.is_empty() {
             return None;
         }
         let index = rand::thread_rng().gen_range(0..self.deck.len());
@@ -286,39 +404,38 @@ impl Deck {
     }
 
     pub fn burn_card(&mut self) {
-        if self.deck.len() == 0 {
+        if self.deck.is_empty() {
             return;
         }
         let index = rand::thread_rng().gen_range(0..self.deck.len());
         self.deck.swap_remove(index);
     }
 
-    pub fn deal_specific(&mut self, rank: Rank, suit: Suit) -> Option<Card> {
+    pub fn _deal_specific(&mut self, rank: Rank, suit: Suit) -> Option<Card> {
         if let Some(pos) = self.deck.iter().position(|c| c.0 == rank && c.1 == suit) {
             Some(self.deck.swap_remove(pos))
         } else {
             None
         }
-
     }
 
     pub fn print_cards<T: AsRef<[Card]>>(cards: T) {
         let mut lines = vec![String::new(); 8];
-        let mut count_cards = 0; 
+        let mut count_cards = 0;
         for card in cards.as_ref() {
             let card_lines = card.get_display_lines();
             for line_number in 0..8 {
                 lines[line_number].push_str(&format!("{} ", card_lines[line_number]));
             }
-            count_cards += 1; 
-            if count_cards==13 {
-                count_cards=0; 
-                println!("{}", lines.join("\n"));    
+            count_cards += 1;
+            if count_cards == 13 {
+                count_cards = 0;
+                println!("{}", lines.join("\n"));
                 lines = vec![String::new(); 8];
             }
         }
-        if count_cards>0 {
-            println!("{}", lines.join("\n"));    
+        if count_cards > 0 {
+            println!("{}", lines.join("\n"));
         }
     }
 }
